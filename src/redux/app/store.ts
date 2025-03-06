@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import stagelistReducer from "../features/stagelist/stagelistSlice";
+import stagelistReducer from "../features/stageList/stageListSlice";
 import progressStageReducer from "../features/progressStage/progressStageSlice";
 
 export const store = configureStore({

@@ -9,7 +9,7 @@ const StageControl = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>(0);
   const playRef = useRef<ReactPlayer | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string>("");
+  // const [videoUrl, setVideoUrl] = useState<string>("");
 
   const handleProgressing = (state: { playedSeconds: number }) => {
     setProgressing(state.playedSeconds);
@@ -23,7 +23,7 @@ const StageControl = () => {
     <div className="flex gap-2 h-[550px]">
       <div className="w-1/4">
         <div className="flex flex-col h-full gap-2">
-          <StageList setVideoUrl={setVideoUrl} />
+          <StageList />
           <ControlPanel
             playRef={playRef}
             progressing={progressing}
@@ -37,7 +37,7 @@ const StageControl = () => {
       <VideoPlayer
         isPlaying={isPlaying}
         playRef={playRef}
-        videoUrl={videoUrl}
+        // videoUrl={videoUrl}
         handleProgressing={handleProgressing}
         handleDuration={handleDuration}
         setIsPlaying={setIsPlaying}

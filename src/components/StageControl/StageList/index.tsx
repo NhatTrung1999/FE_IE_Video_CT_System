@@ -1,27 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
-import { fetchStageList } from "../../../redux/features/stagelist/stagelistSlice";
+import {
+  fetchStageList,
+  setActiveId,
+  setVideoSrc,
+} from "../../../redux/features/stageList/stageListSlice";
 import {
   addProgressStage,
   ProgressStageState,
 } from "../../../redux/features/progressStage/progressStageSlice";
 
-const StageList = ({ setVideoUrl }: { setVideoUrl: (url: string) => void }) => {
-  const [tabStageIndex, setTabStageIndex] = useState<number>(0);
-  const tabStages = useAppSelector((state) => state.stagelist);
+const StageList = () => {
+  const { stageListStage: tabStages, activeId } = useAppSelector(
+    (state) => state.stagelist
+  );
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    dispatch(fetchStageList(tabStages[tabStageIndex].name));
-  }, [dispatch, tabStages[tabStageIndex].name]);
+    dispatch(fetchStageList(tabStages[activeId].name));
+  }, [dispatch, tabStages[activeId].name]);
 
   const handleClickTabStage = (tabIndex: number) => {
-    setTabStageIndex(tabIndex);
+    dispatch(setActiveId({ id: tabIndex }));
   };
 
   const handleClickTabItem = (name: string, url: string) => {
+    const id = Date.now();
     const newProgressStage: ProgressStageState = {
-      id: Date.now(),
+      id: id,
       stage: name.split(". ")[0],
       partName: name.split(". ")[1],
       cycleTimes: [
@@ -58,11 +64,12 @@ const StageList = ({ setVideoUrl }: { setVideoUrl: (url: string) => void }) => {
           avg: 0,
         },
       ],
+      statusBtn: false,
+      videoSrc: url,
     };
-
-    dispatch(addProgressStage({ newProgressStage }));
-
-    setVideoUrl(url);
+    dispatch(addProgressStage({ activeId, newProgressStage }));
+    dispatch(setVideoSrc({ videoSrc: url }));
+    // setVideoUrl(url);
   };
 
   return (
@@ -75,9 +82,7 @@ const StageList = ({ setVideoUrl }: { setVideoUrl: (url: string) => void }) => {
           {tabStages.map((tabStage, tabIndex) => (
             <button
               className={`text-primary-50 px-3 py-2 text-base rounded-md font-semibold uppercase cursor-pointer ${
-                tabIndex === tabStageIndex
-                  ? "bg-primary-50 text-primary-600"
-                  : ""
+                tabIndex === activeId ? "bg-primary-50 text-primary-600" : ""
               }`}
               key={tabIndex}
               onClick={() => handleClickTabStage(tabIndex)}
@@ -89,7 +94,7 @@ const StageList = ({ setVideoUrl }: { setVideoUrl: (url: string) => void }) => {
       </div>
       <div className="p-2">
         <ul>
-          {tabStages[tabStageIndex].items.map((item, index) => (
+          {tabStages[activeId].items.map((item, index) => (
             <li
               className="p-2 hover:bg-primary-700 text-xl text-primary-50 flex justify-between items-center cursor-pointer"
               key={index}

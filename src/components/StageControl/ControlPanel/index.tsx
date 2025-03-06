@@ -1,6 +1,8 @@
 import { RefObject, useState } from "react";
 import { FaPlay, FaPause, FaCircleCheck } from "react-icons/fa6";
 import ReactPlayer from "react-player";
+import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
+import { updateProgressStage } from "../../../redux/features/progressStage/progressStageSlice";
 
 const formatTime = (seconds: number) => {
   // const h = Math.floor(seconds / 3600)
@@ -46,6 +48,15 @@ const ControlPanel = ({
   const [endTime, setEndTime] = useState<number>(0);
   const [typeBtnIndex, setTypeBtnIndex] = useState<number | null>(null);
 
+  const selectedId = useAppSelector((state) => state.progressStage.selectedId);
+  const activeId = useAppSelector((state) => state.stagelist.activeId);
+  const cycleTimeId = useAppSelector(
+    (state) => state.progressStage.cycleTimeId
+  );
+
+  // const state = useAppSelector((state) => state.progressStage.stages);
+  const dispatch = useAppDispatch();
+
   const handleToggle = () => {
     if (isPlaying) {
       setEndTime(progressing);
@@ -65,7 +76,6 @@ const ControlPanel = ({
 
   const handleTypeBtnClick = (index: number) => {
     setTypeBtnIndex(index);
-    console.log("startTime:", startTime, "endTime:", endTime);
     const typeVal = endTime - startTime;
     setTypeBtns((prev) =>
       prev.map((type, i) =>
@@ -80,25 +90,55 @@ const ControlPanel = ({
   };
 
   const handleDone = () => {
-    console.log("Done");
+    // console.log(Math.round(Math.random() * 2));
+    const valVA = Math.round(typeBtns[0].total);
+    const valNVA = Math.round(typeBtns[1].total);
+
+    dispatch(
+      updateProgressStage({
+        activeId,
+        id: selectedId,
+        payloadVA: {
+          typeVA: "VA",
+          ctVA: `CT${Number(cycleTimeId ?? 0) + 1}`,
+          valueVA: valVA,
+        },
+        payloadNVA: {
+          typeNVA: "NVA",
+          ctNVA: `CT${Number(cycleTimeId ?? 0) + 1}`,
+          valueNVA: valNVA,
+        },
+      })
+    );
+
+    setTypeBtns([
+      { name: "VA", total: 0 },
+      { name: "NVA", total: 0 },
+      { name: "SKIP", total: 0 },
+    ]);
   };
 
   return (
     <div className="h-1/4 flex flex-col text-primary-50 gap-2">
       <div className="flex-1">
         <div className="w-full h-full flex justify-center items-center gap-2">
-          <div className="px-3 py-1 bg-primary-700 rounded-md font-semibold text-xl w-20 text-center flex-1">
+          <div
+            className={`px-3 py-1 bg-primary-700 rounded-md font-semibold text-xl w-20 text-center flex-1 ${
+              cycleTimeId === null ? "cursor-not-allowed opacity-50" : ""
+            }`}
+          >
             {formatTime(progressing)}
           </div>
 
           <button
             type="button"
             className={`${
-              isPlaying
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
-            } font-semibold rounded-lg text-sm px-4 py-2 uppercase flex justify-center items-center gap-1 flex-1`}
+              isPlaying ? "bg-red-600" : "bg-blue-600"
+            } font-semibold rounded-lg text-sm px-4 py-2 uppercase flex justify-center items-center gap-1 flex-1 ${
+              cycleTimeId === null ? "cursor-not-allowed opacity-50" : ""
+            }`}
             onClick={handleToggle}
+            disabled={cycleTimeId === null ? true : false}
           >
             {isPlaying ? (
               <>
@@ -115,7 +155,10 @@ const ControlPanel = ({
           <button
             type="button"
             onClick={handleDone}
-            className={`bg-green-600 hover:bg-green-700 font-semibold rounded-lg text-sm px-4 py-2 uppercase flex justify-center items-center gap-1 flex-1`}
+            disabled={cycleTimeId === null ? true : false}
+            className={`bg-green-600 ${
+              cycleTimeId === null ? "cursor-not-allowed opacity-50" : ""
+            } font-semibold rounded-lg text-sm px-4 py-2 uppercase flex justify-center items-center gap-1 flex-1`}
           >
             <FaCircleCheck />
             Done
@@ -133,12 +176,19 @@ const ControlPanel = ({
                 type="button"
                 className={`flex-1 h-full rounded-md ${
                   index === typeBtnIndex ? "bg-primary-500" : "bg-primary-700"
+                } ${
+                  cycleTimeId === null ? "cursor-not-allowed opacity-50" : ""
                 }`}
                 onClick={() => handleTypeBtnClick(index)}
+                disabled={cycleTimeId === null ? true : false}
               >
                 {type.name}
               </button>
-              <div className="flex-1 text-center text-lg">
+              <div
+                className={`flex-1 text-center text-lg ${
+                  cycleTimeId === null ? "cursor-not-allowed opacity-50" : ""
+                }`}
+              >
                 {Math.round(type.total || 0)}
               </div>
             </div>
@@ -146,7 +196,11 @@ const ControlPanel = ({
         </div>
       </div>
       <div className="flex-1">
-        <div className="w-full h-full flex justify-evenly items-center gap-1">
+        <div
+          className={`w-full h-full flex justify-evenly items-center gap-1 ${
+            cycleTimeId === null ? "cursor-not-allowed opacity-50" : ""
+          }`}
+        >
           <p className="font-semibold text-lg w-12">
             {formatTime(progressing)}
           </p>
@@ -158,6 +212,7 @@ const ControlPanel = ({
             max={duration}
             // step={0.1}
             onChange={handleChange}
+            disabled={cycleTimeId === null ? true : false}
           />
           <p className="font-semibold text-lg w-12">{formatTime(duration)}</p>
         </div>

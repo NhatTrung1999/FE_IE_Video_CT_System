@@ -1,17 +1,45 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
-import { MdSave } from "react-icons/md";
-import { updateProgressStage } from "../../redux/features/progressStage/progressStageSlice";
+import {
+  setCycleTimeId,
+  setSelectedId,
+  updateBtnSave,
+} from "../../redux/features/progressStage/progressStageSlice";
+import { setVideoSrc } from "../../redux/features/stageList/stageListSlice";
+// import { MdSave } from "react-icons/md";
+// import { updateProgressStage } from "../../redux/features/progressStage/progressStageSlice";
 
 const ProgressTable = () => {
-  const progressData = useAppSelector((state) => state.progressStage);
-  const [partNameText, setPartNameText] = useState<string>("");
-
+  const progressData = useAppSelector((state) => state.progressStage.stages);
+  const activeId = useAppSelector((state) => state.stagelist.activeId);
   const dispatch = useAppDispatch();
 
-  const handleSaveProgressStage = (id: number | string) => {
-    dispatch(updateProgressStage({ id, partName: partNameText }));
-    setPartNameText("");
+  const [selectedCell, setSelectedCell] = useState<{
+    rowId: number | string | null;
+    colId: number | string | null;
+  }>({
+    rowId: null,
+    colId: null,
+  });
+
+  useEffect(() => {
+    dispatch(setSelectedId(selectedCell.rowId));
+    dispatch(setCycleTimeId(selectedCell.colId));
+  }, [selectedCell]);
+
+  const handleSelectedCell = (
+    rowId: number | string | null,
+    colId: number | string | null
+  ) => {
+    setSelectedCell((prev) =>
+      prev.rowId === rowId && prev.colId === colId
+        ? { rowId: null, colId: null }
+        : { rowId, colId }
+    );
+  };
+
+  const handleClickSave = (id: number | string) => {
+    dispatch(updateBtnSave({ id, activeId }));
   };
 
   return (
@@ -31,13 +59,13 @@ const ProgressTable = () => {
               </th>
               <th className="p-2 border">Type</th>
               {[...Array(10)].map((_, i) => (
-                <th key={i} className="p-2 border">
+                <th key={i} className={`p-2 border bg-[#666666]`}>
                   CT{i + 1}
                   <br />
                   (in sec)
                 </th>
               ))}
-              <th className="p-2 border">
+              <th className="p-2 border bg-[#4e6996]">
                 Avg CT <br />
                 (in sec)
               </th>
@@ -48,34 +76,85 @@ const ProgressTable = () => {
         <div className="flex-1 overflow-y-auto scrollbar-hide">
           <table className="w-full table-fixed text-center text-primary-50 text-lg">
             <tbody>
-              {progressData.map((stageData, index) => (
-                <Fragment key={index}>
-                  {stageData.cycleTimes.map((cycleTime, subIndex) => (
-                    <tr key={subIndex}>
-                      {subIndex === 0 && (
-                        <>
-                          <td className="border" rowSpan={2}>
-                            {stageData.stage}
+              {progressData[activeId].progressStageData.map(
+                (stageData, index) => (
+                  <Fragment key={index}>
+                    {stageData.cycleTimes.map((cycleTime, subIndex) => {
+                      // const isSelectedRow = selectedRowId === stageData.id;
+                      return (
+                        <tr
+                          key={subIndex}
+                          // className={`cursor-pointer ${
+                          //   isSelectedRow ? "bg-slate-800" : ""
+                          // }`}
+                          onClick={() => {
+                            setSelectedCell({
+                              rowId: stageData.id,
+                              colId: null,
+                            });
+                            // console.log(stageData);
+                            dispatch(
+                              setVideoSrc({ videoSrc: stageData.videoSrc })
+                            );
+                          }}
+                          className={`cursor-pointer`}
+                        >
+                          {subIndex === 0 && (
+                            <>
+                              <td className="border" rowSpan={2}>
+                                {stageData.stage}
+                              </td>
+                              <td className="w-1/6 border" rowSpan={2}>
+                                {stageData.partName}
+                              </td>
+                            </>
+                          )}
+                          <td className="border">{cycleTime.type}</td>
+                          {Object.values(cycleTime.cycleTimeItems).map(
+                            (value, i) => (
+                              <td
+                                key={i}
+                                // className={`border`}
+                                className={`border  ${
+                                  selectedCell.rowId === stageData.id &&
+                                  selectedCell.colId === i
+                                    ? "bg-primary-800"
+                                    : "bg-[#0b6e4a]"
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectedCell(stageData.id, i);
+                                }}
+                              >
+                                {value}
+                              </td>
+                            )
+                          )}
+                          <td className="border bg-[#4e6996]">
+                            {cycleTime.avg}
                           </td>
-                          <td className="w-1/6 border" rowSpan={2}>
-                            {stageData.partName}
-                          </td>
-                        </>
-                      )}
-                      <td className="border">{cycleTime.type}</td>
-                      {Object.values(cycleTime.cycleTimeItems).map(
-                        (value, i) => (
-                          <td key={i} className="border">
-                            {value}
-                          </td>
-                        )
-                      )}
-                      <td className="border">{cycleTime.avg}</td>
-                      <td className="border">{cycleTime.avg}</td>
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
+                          {subIndex === 0 && (
+                            <td className="border p-1" rowSpan={2}>
+                              <button
+                                type="button"
+                                className={`text-white ${
+                                  stageData.statusBtn
+                                    ? "bg-green-600 opacity-50 cursor-not-allowed"
+                                    : "bg-green-600 hover:bg-green-700"
+                                } font-medium rounded-md text-sm px-2 py-1`}
+                                onClick={() => handleClickSave(stageData.id)}
+                                disabled={stageData.statusBtn}
+                              >
+                                Save
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </Fragment>
+                )
+              )}
             </tbody>
           </table>
         </div>
